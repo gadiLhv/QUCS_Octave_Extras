@@ -2,26 +2,23 @@ function [S,Z0,f] = readQucsSparams(qucsDataFile)
   % Read variables using QUCS "api"
   qucsVars = loadQucsDataSet(qucsDataFile);
   
-  % First iteration, find frequency
+  % Currently defaults at 50 Ohm
+  Z0 = 50;
+  
+  Stemp = [];
+  Sidxs = [];
+  
+  % Separate frequency and S-parameters from the rest of the results.
   for varIdx = 1:numel(qucsVars)
     cVar = qucsVars(varIdx);
     
     % Special case, handle the frequency case
     if(strcmp(cVar.name,'frequency'))
       f = reshape(cVar.data,[],1);
-      break;
+      continue;
     end
     
-  end
-  
-  Z0 = 0;
-  Stemp = [];
-  Sidxs = [];
-  % Second iteration, populate S-parameters
-  for varIdx = 1:numel(qucsVars)
-    cVar = qucsVars(varIdx);
     [values, count,~ ,~] = sscanf (cVar.name,'S[%d,%d]');
-    
     % Save positions of values before reshaping
     if(count == 2)
       Sidxs = [Sidxs ; values(:).'];
@@ -29,7 +26,8 @@ function [S,Z0,f] = readQucsSparams(qucsDataFile)
     end
   end
   
-  Sdims = max(Sidxs);
+  
+  Sdims = max(Sidxs,[],1);
   S = zeros([Sdims numel(f)]);
   
   % Arrange by dimensions
