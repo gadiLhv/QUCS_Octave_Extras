@@ -1,0 +1,5 @@
+In order to use the QUCS "API" based commands, the QUCS octave folder needs to be added to the octave path. In my PC it was "/usr/share/qucs/octave"
+
+
+
+
