@@ -19,7 +19,7 @@ M_mirror = convS2ABCD(S_mirror,Z0);
 cosh_2gl = M_mirror(1,1,:);
 % Sine of the double phase. Need to choose the Riemann plane carefully
 sinh_2gl_1 = sqrt(cosh_2gl.^2-1);
-sinh_2gl_2 = sinh_2gl_1.*exp(1i*pi);
+sinh_2gl_2 = -sinh_2gl_1;
 
 % Decide which solution is viable with attenuation demand
 exp_2gl_1 = cosh_2gl - sinh_2gl_1;
@@ -35,10 +35,14 @@ hdl = legend('Solution 1','Solution 2');
 set(hdl,'location','east');
 
 % Choose correct solution with attenuation condition
-sinh_2gl = (abs(exp_2gl_1) < 1).*sinh_2gl_1 + (abs(exp_2gl_2) < 1).*sinh_2gl_2;
+whichSol = (abs(exp_2gl_1) <= 1) + (abs(exp_2gl_2) <= 1)*2;
+whichSol(whichSol > 2) = 1;
+
+sinh_2gl = (whichSol == 1).*sinh_2gl_1 + (whichSol == 2).*sinh_2gl_2;
 
 % Characteristic impedance. Use real in case of any residual numeric error
-Zc = real(-M_mirror(1,2,:)./sinh_2gl);
+Zc = real(M_mirror(1,2,:)./sinh_2gl);
+
 
 figure;
 plot(f(:)/1e9,Zc(:));
@@ -52,13 +56,15 @@ Zc = mean(Zc(:));
 fprintf(1,'Characteristic impedance of T-line: %.2f [Ohm]\n',Zc);
 
 % Now all that is left is disect the phase\loss into two, same as before
-exp_gl = sqrt(cosh_2gl + sinh_2gl);
-cosh_gl = 0.5*(exp_gl + 1./exp_gl);
-sinh_gl = 0.5*(exp_gl - 1./exp_gl);
+exp_gl = sqrt(cosh_2gl - sinh_2gl);
+cosh_gl = 0.5*(exp_gl.^(-1) + exp_gl);
+sinh_gl = 0.5*(exp_gl.^(-1) - exp_gl);
+
+
 
 % Build de-embedding matrix
-D = 2*cosh_gl - (Zc/Z0 + Z0/Zc)*sinh_gl;
-S_l_11 = -(Zc/Z0 - Z0/Zc)*sinh_gl./D;
+D = 2*cosh_gl + (Zc/Z0 + Z0/Zc)*sinh_gl;
+S_l_11 = (Zc/Z0 - Z0/Zc).*sinh_gl./D;
 S_l_12 = 2./D;
 
 S_l = [[S_l_11 S_l_12] ; [S_l_12 S_l_11]];
